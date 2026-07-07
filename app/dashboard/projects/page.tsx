@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useProjectFlowStore } from '@/store/projectStore';
 import { 
@@ -16,7 +16,7 @@ const COVER_IMAGES = [
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800'
 ];
 
-export default function ProjectsList() {
+function ProjectsListContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { projects, users, addProject } = useProjectFlowStore();
@@ -416,5 +416,18 @@ export default function ProjectsList() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProjectsList() {
+  return (
+    <Suspense fallback={
+      <div className="p-10 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span>Loading workspace projects...</span>
+      </div>
+    }>
+      <ProjectsListContent />
+    </Suspense>
   );
 }
