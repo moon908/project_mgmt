@@ -1,0 +1,204 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  DEVELOPER
+  TESTER
+  VIEWER
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  REVIEW
+  TESTING
+  COMPLETED
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  MENTION
+  DEADLINE
+  PROJECT_UPDATE
+  COMMENT
+  MEETING
+}
+
+model User {
+  id            String         @id @default(uuid())
+  name          String?
+  email         String         @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          Role           @default(DEVELOPER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  workspaces    Workspace[]    @relation("WorkspaceMembers")
+  ownedWorkspaces Workspace[]  @relation("WorkspaceOwner")
+  tasks         Task[]         @relation("TaskAssignee")
+  comments      Comment[]
+  notifications Notification[]
+  activities    Activity[]
+  aiHistories   AIHistory[]
+  events        CalendarEvent[]
+}
+
+model Workspace {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  ownerId     String
+  owner       User      @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     User[]    @relation("WorkspaceMembers")
+  projects    Project[]
+  meetings    Meeting[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+  priority    String        @default("medium")
+  dueDate     DateTime?
+  coverImage  String?
+  tags        String[]
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  activities  Activity[]
+  aiHistories AIHistory[]
+  events      CalendarEvent[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Task {
+  id            String          @id @default(uuid())
+  projectId     String
+  project       Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  status        TaskStatus      @default(TODO)
+  priority      String          @default("medium")
+  storyPoints   Int?
+  dueDate       DateTime?
+  assigneeId    String?
+  assignee      User?           @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  subtasks      Json[]          // Array of subtasks: { id: string, title: string, completed: boolean }
+  labels        String[]
+  comments      Comment[]
+  attachments   Attachment[]
+  timeSpent     Int             @default(0) // in minutes
+  estimatedTime Int             @default(0) // in minutes
+  recurring     Boolean         @default(false)
+  activities    Activity[]
+  events        CalendarEvent[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  type      String
+  size      Int
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+}
+
+model Meeting {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String   // "created", "updated", "moved", etc.
+  targetType  String   // "project", "task", "comment", etc.
+  targetName  String
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  createdAt   DateTime @default(now())
+}
+
+model AIHistory {
+  id        String   @id @default(uuid())
+  prompt    String
+  response  String
+  type      String   // "plan", "summary", "stories", etc.
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  type        String   // "task", "meeting", "milestone"
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}

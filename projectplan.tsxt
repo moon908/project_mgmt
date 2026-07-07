@@ -1,0 +1,611 @@
+Build a modern, production-ready AI-powered Project Management web application using Next.js 15, React 19, TypeScript, Tailwind CSS, Shadcn UI, Framer Motion, Prisma ORM, PostgreSQL, NextAuth/Auth.js, and OpenAI API.
+
+The application should have a premium UI inspired by Linear, Notion, and Jira with smooth animations, glassmorphism, dark/light mode, responsive layouts, and excellent UX.
+
+====================================
+PROJECT NAME
+====================================
+
+ProjectFlow AI
+
+====================================
+CORE FEATURES
+====================================
+
+1. Authentication
+- Email & Password Login
+- Google OAuth
+- Forgot Password
+- Protected Routes
+- User Profile
+- Avatar Upload
+
+2. Dashboard
+Display
+
+- Active Projects
+- Completed Projects
+- Pending Tasks
+- Team Members
+- Upcoming Deadlines
+- Calendar
+- Productivity Graph
+- Weekly Progress
+- AI Suggestions
+- Notifications
+
+Animated cards with beautiful charts.
+
+====================================
+PROJECT MANAGEMENT
+====================================
+
+Users can
+
+Create Project
+
+Fields
+
+- Name
+- Description
+- Status
+- Priority
+- Due Date
+- Team Members
+- Tags
+- Cover Image
+
+Project Details Page
+
+Contains
+
+- Overview
+- Tasks
+- Files
+- Team
+- Timeline
+- Activity Log
+- AI Insights
+
+====================================
+TASK MANAGEMENT
+====================================
+
+Each project supports
+
+Task Title
+
+Description
+
+Status
+
+Priority
+
+Story Points
+
+Due Date
+
+Assignee
+
+Labels
+
+Subtasks
+
+Checklist
+
+Attachments
+
+Comments
+
+Time Tracking
+
+Recurring Tasks
+
+Drag and Drop Kanban Board
+
+Columns
+
+Backlog
+
+Todo
+
+In Progress
+
+Review
+
+Testing
+
+Completed
+
+Support drag-and-drop between columns.
+
+====================================
+AI FEATURES
+====================================
+
+OpenAI Integration
+
+Generate
+
+• Project Plan
+
+• Sprint Plan
+
+• User Stories
+
+• Task Breakdown
+
+• Risk Analysis
+
+• Daily Summary
+
+• Weekly Summary
+
+• Meeting Minutes
+
+• Requirement Documentation
+
+• Bug Fix Suggestions
+
+• Project Timeline
+
+• AI Task Prioritization
+
+• Automatic Deadline Suggestions
+
+• AI Chat Assistant
+
+Prompt examples
+
+"Create a roadmap for an ecommerce app."
+
+"Break this project into tasks."
+
+"Summarize today's progress."
+
+"Suggest blockers."
+
+====================================
+TEAM MANAGEMENT
+====================================
+
+Invite Members
+
+Roles
+
+Owner
+
+Admin
+
+Manager
+
+Developer
+
+Tester
+
+Viewer
+
+Permissions
+
+Project Access
+
+Task Assignment
+
+Role Based Access Control
+
+====================================
+CALENDAR
+====================================
+
+Interactive Calendar
+
+View
+
+Daily
+
+Weekly
+
+Monthly
+
+Deadlines
+
+Meetings
+
+Tasks
+
+Milestones
+
+====================================
+CHAT
+====================================
+
+Realtime Team Chat
+
+Project Rooms
+
+Direct Messages
+
+Typing Indicator
+
+Read Receipts
+
+File Sharing
+
+Emoji Reactions
+
+====================================
+FILES
+====================================
+
+Upload
+
+Images
+
+PDF
+
+Excel
+
+Videos
+
+Documents
+
+Drag & Drop Upload
+
+Cloud Storage
+
+Preview Files
+
+====================================
+REPORTS
+====================================
+
+Generate Reports
+
+PDF
+
+Excel
+
+CSV
+
+Sprint Report
+
+Performance Report
+
+Task Report
+
+Productivity Report
+
+Burn Down Chart
+
+Velocity Chart
+
+Gantt Chart
+
+====================================
+NOTIFICATIONS
+====================================
+
+Realtime Notifications
+
+Task Assigned
+
+Mention
+
+Deadline
+
+Project Update
+
+Comment
+
+Meeting Reminder
+
+====================================
+SEARCH
+====================================
+
+Global Search
+
+Projects
+
+Tasks
+
+Members
+
+Files
+
+Comments
+
+Filters
+
+====================================
+ACTIVITY LOG
+====================================
+
+Every action should be recorded.
+
+Examples
+
+Task Created
+
+Task Edited
+
+Project Updated
+
+Member Joined
+
+Comment Added
+
+File Uploaded
+
+====================================
+SETTINGS
+====================================
+
+Profile
+
+Workspace
+
+Theme
+
+Notifications
+
+Language
+
+Security
+
+API Keys
+
+====================================
+ADMIN PANEL
+====================================
+
+Manage Users
+
+Manage Projects
+
+Analytics
+
+Workspace Settings
+
+Usage Statistics
+
+Storage
+
+Logs
+
+====================================
+ANALYTICS
+====================================
+
+Interactive Charts
+
+Tasks Completed
+
+Project Progress
+
+Productivity
+
+Hours Worked
+
+Team Performance
+
+Workload Distribution
+
+Completion Rate
+
+====================================
+LANDING PAGE
+====================================
+
+Beautiful Hero Section
+
+Animated Background
+
+Floating Cards
+
+Feature Showcase
+
+Statistics
+
+Testimonials
+
+Pricing
+
+FAQ
+
+Footer
+
+Call To Action
+
+====================================
+DESIGN
+====================================
+
+Premium SaaS Design
+
+Linear inspired
+
+Notion inspired
+
+Glassmorphism
+
+Gradient Backgrounds
+
+Smooth Animations
+
+Micro Interactions
+
+Rounded Cards
+
+Hover Effects
+
+Responsive Design
+
+Dark Mode
+
+Light Mode
+
+Command Palette
+
+Keyboard Shortcuts
+
+Loading Skeletons
+
+Empty States
+
+Beautiful Icons
+
+====================================
+EXTRAS
+====================================
+
+Pomodoro Timer
+
+Focus Mode
+
+Notes
+
+Bookmarks
+
+Favorite Projects
+
+Pinned Tasks
+
+Recent Activity
+
+Keyboard Shortcuts
+
+Workspace Themes
+
+Multi-language Support
+
+Offline Support (PWA)
+
+Realtime Sync
+
+Autosave
+
+====================================
+DATABASE
+====================================
+
+Prisma Models
+
+User
+
+Workspace
+
+Project
+
+Task
+
+Comment
+
+Attachment
+
+Notification
+
+Team
+
+Role
+
+Meeting
+
+Activity
+
+AIHistory
+
+CalendarEvent
+
+====================================
+TECH STACK
+====================================
+
+Next.js 15
+
+React 19
+
+TypeScript
+
+Tailwind CSS
+
+Shadcn UI
+
+Framer Motion
+
+Prisma ORM
+
+PostgreSQL
+
+NextAuth/Auth.js
+
+React Hook Form
+
+Zod
+
+TanStack Query
+
+React DnD
+
+Socket.io
+
+OpenAI API
+
+UploadThing/Cloudinary
+
+Recharts
+
+Lucide Icons
+
+====================================
+FOLDER STRUCTURE
+====================================
+
+Use scalable architecture with
+
+app/
+
+components/
+
+features/
+
+hooks/
+
+lib/
+
+services/
+
+actions/
+
+prisma/
+
+types/
+
+utils/
+
+store/
+
+styles/
+
+====================================
+QUALITY
+====================================
+
+- Fully responsive
+- Production-ready code
+- Type-safe
+- Reusable components
+- Modular architecture
+- Optimized performance
+- Accessibility (WCAG)
+- SEO optimized
+- Error boundaries
+- Loading states
+- Toast notifications
+- Form validation
+- Clean code with comments
+- Environment variable support
+- Docker support
+- Deployment-ready for Vercel
+
+Generate the complete project with clean architecture, modern UI, reusable components, sample data, and realistic workflows suitable for portfolio use or deployment as a SaaS product.
