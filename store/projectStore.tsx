@@ -55,6 +55,7 @@ interface ProjectStoreContextType {
   
   // Helpers
   logActivity: (action: string, targetName: string, targetType: ActivityLog['targetType'], projectId?: string) => void;
+  initializeOnboardedWorkspace?: (data: any) => void;
 }
 
 const ProjectStoreContext = createContext<ProjectStoreContextType | undefined>(undefined);
@@ -68,61 +69,136 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(INITIAL_ACTIVITIES);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[5]); // Default to "You"
+  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[5]); 
   const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isDbActive, setIsDbActive] = useState(false);
 
-  // Sync state from localStorage on mount
+  // Sync state from APIs or localStorage on mount
   useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem('pf_users');
-      const storedProjects = localStorage.getItem('pf_projects');
-      const storedTasks = localStorage.getItem('pf_tasks');
-      const storedRooms = localStorage.getItem('pf_rooms');
-      const storedMessages = localStorage.getItem('pf_messages');
-      const storedNotifications = localStorage.getItem('pf_notifications');
-      const storedActivities = localStorage.getItem('pf_activities');
-      const storedEvents = localStorage.getItem('pf_events');
-      const storedCurrentUser = localStorage.getItem('pf_current_user');
-      const storedTheme = localStorage.getItem('pf_theme');
+    async function loadInitialData() {
+      try {
+        const statusRes = await fetch('/api/status');
+        const { dbConnected } = await statusRes.json();
+        const mode = localStorage.getItem('pf_workspace_mode') || 'demo';
+        
+        if (dbConnected && mode === 'custom') {
+          setIsDbActive(true);
+          const [resProj, resTasks, resNotif, resActs, resEvents] = await Promise.all([
+            fetch('/api/projects'),
+            fetch('/api/tasks'),
+            fetch(`/api/notifications?userId=${currentUser.id}`),
+            fetch('/api/activities'),
+            fetch(`/api/calendar?userId=${currentUser.id}`)
+          ]);
 
-      if (storedUsers) setUsers(JSON.parse(storedUsers));
-      if (storedProjects) setProjects(JSON.parse(storedProjects));
-      if (storedTasks) setTasks(JSON.parse(storedTasks));
-      if (storedRooms) setChatRooms(JSON.parse(storedRooms));
-      if (storedMessages) setChatMessages(JSON.parse(storedMessages));
-      if (storedNotifications) setNotifications(JSON.parse(storedNotifications));
-      if (storedActivities) setActivityLogs(JSON.parse(storedActivities));
-      if (storedEvents) setCalendarEvents(JSON.parse(storedEvents));
-      if (storedCurrentUser) setCurrentUser(JSON.parse(storedCurrentUser));
-      if (storedTheme) {
-        const parsedTheme = storedTheme as 'dark' | 'light';
-        setThemeState(parsedTheme);
-        document.documentElement.classList.toggle('light', parsedTheme === 'light');
-      } else {
-        document.documentElement.classList.remove('light'); // default dark theme
+          if (resProj.ok && resTasks.ok) {
+            const dbProjects = await resProj.ok ? await resProj.json() : [];
+            const dbTasks = await resTasks.ok ? await resTasks.json() : [];
+            const dbNotif = await resNotif.ok ? await resNotif.json() : [];
+            const dbActs = await resActs.ok ? await resActs.json() : [];
+            const dbEvents = await resEvents.ok ? await resEvents.json() : [];
+
+            if (dbProjects.length > 0) setProjects(dbProjects);
+            if (dbTasks.length > 0) setTasks(dbTasks);
+            if (dbNotif.length > 0) setNotifications(dbNotif);
+            if (dbActs.length > 0) setActivityLogs(dbActs);
+            if (dbEvents.length > 0) setCalendarEvents(dbEvents);
+            
+            setIsLoaded(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Database connection failed, using local simulation storage", err);
       }
-    } catch (e) {
-      console.error("Failed to load local state", e);
-    }
-    setIsLoaded(true);
-  }, []);
 
-  // Save to localStorage whenever state changes
+      // LocalStorage fallback / custom data path
+      try {
+        const mode = localStorage.getItem('pf_workspace_mode') || 'demo';
+        const isCustom = mode === 'custom';
+
+        const storedUsers = localStorage.getItem(isCustom ? 'pf_custom_users' : 'pf_users');
+        const storedProjects = localStorage.getItem(isCustom ? 'pf_custom_projects' : 'pf_projects');
+        const storedTasks = localStorage.getItem(isCustom ? 'pf_custom_tasks' : 'pf_tasks');
+        const storedRooms = localStorage.getItem(isCustom ? 'pf_custom_rooms' : 'pf_rooms');
+        const storedMessages = localStorage.getItem(isCustom ? 'pf_custom_messages' : 'pf_messages');
+        const storedNotifications = localStorage.getItem(isCustom ? 'pf_custom_notifications' : 'pf_notifications');
+        const storedActivities = localStorage.getItem(isCustom ? 'pf_custom_activities' : 'pf_activities');
+        const storedEvents = localStorage.getItem(isCustom ? 'pf_custom_events' : 'pf_events');
+        const storedCurrentUser = localStorage.getItem(isCustom ? 'pf_custom_current_user' : 'pf_current_user');
+        const storedTheme = localStorage.getItem('pf_theme');
+
+        if (storedUsers) setUsers(JSON.parse(storedUsers));
+        else if (isCustom) setUsers([]);
+
+        if (storedProjects) setProjects(JSON.parse(storedProjects));
+        else if (isCustom) setProjects([]);
+
+        if (storedTasks) setTasks(JSON.parse(storedTasks));
+        else if (isCustom) setTasks([]);
+
+        if (storedRooms) setChatRooms(JSON.parse(storedRooms));
+        else if (isCustom) setChatRooms([]);
+
+        if (storedMessages) setChatMessages(JSON.parse(storedMessages));
+        else if (isCustom) setChatMessages([]);
+
+        if (storedNotifications) setNotifications(JSON.parse(storedNotifications));
+        else if (isCustom) setNotifications([]);
+
+        if (storedActivities) setActivityLogs(JSON.parse(storedActivities));
+        else if (isCustom) setActivityLogs([]);
+
+        if (storedEvents) setCalendarEvents(JSON.parse(storedEvents));
+        else if (isCustom) setCalendarEvents([]);
+
+        if (storedCurrentUser) setCurrentUser(JSON.parse(storedCurrentUser));
+        
+        if (storedTheme) {
+          const parsedTheme = storedTheme as 'dark' | 'light';
+          setThemeState(parsedTheme);
+          document.documentElement.classList.toggle('light', parsedTheme === 'light');
+        } else {
+          document.documentElement.classList.remove('light');
+        }
+      } catch (e) {
+        console.error("Failed to load local state", e);
+      }
+      setIsLoaded(true);
+    }
+
+    loadInitialData();
+  }, [currentUser.id]);
+
+  // Save to localStorage whenever state changes (fallback / custom mode)
   useEffect(() => {
-    if (!isLoaded) return;
-    localStorage.setItem('pf_users', JSON.stringify(users));
-    localStorage.setItem('pf_projects', JSON.stringify(projects));
-    localStorage.setItem('pf_tasks', JSON.stringify(tasks));
-    localStorage.setItem('pf_rooms', JSON.stringify(chatRooms));
-    localStorage.setItem('pf_messages', JSON.stringify(chatMessages));
-    localStorage.setItem('pf_notifications', JSON.stringify(notifications));
-    localStorage.setItem('pf_activities', JSON.stringify(activityLogs));
-    localStorage.setItem('pf_events', JSON.stringify(calendarEvents));
-    localStorage.setItem('pf_current_user', JSON.stringify(currentUser));
+    if (!isLoaded || isDbActive) return;
+    const mode = localStorage.getItem('pf_workspace_mode') || 'demo';
+    const isCustom = mode === 'custom';
+    
+    const usersKey = isCustom ? 'pf_custom_users' : 'pf_users';
+    const projectsKey = isCustom ? 'pf_custom_projects' : 'pf_projects';
+    const tasksKey = isCustom ? 'pf_custom_tasks' : 'pf_tasks';
+    const roomsKey = isCustom ? 'pf_custom_rooms' : 'pf_rooms';
+    const messagesKey = isCustom ? 'pf_custom_messages' : 'pf_messages';
+    const notificationsKey = isCustom ? 'pf_custom_notifications' : 'pf_notifications';
+    const activitiesKey = isCustom ? 'pf_custom_activities' : 'pf_activities';
+    const eventsKey = isCustom ? 'pf_custom_events' : 'pf_events';
+    const currentUserKey = isCustom ? 'pf_custom_current_user' : 'pf_current_user';
+
+    localStorage.setItem(usersKey, JSON.stringify(users));
+    localStorage.setItem(projectsKey, JSON.stringify(projects));
+    localStorage.setItem(tasksKey, JSON.stringify(tasks));
+    localStorage.setItem(roomsKey, JSON.stringify(chatRooms));
+    localStorage.setItem(messagesKey, JSON.stringify(chatMessages));
+    localStorage.setItem(notificationsKey, JSON.stringify(notifications));
+    localStorage.setItem(activitiesKey, JSON.stringify(activityLogs));
+    localStorage.setItem(eventsKey, JSON.stringify(calendarEvents));
+    localStorage.setItem(currentUserKey, JSON.stringify(currentUser));
     localStorage.setItem('pf_theme', theme);
-  }, [users, projects, tasks, chatRooms, chatMessages, notifications, activityLogs, calendarEvents, currentUser, theme, isLoaded]);
+  }, [users, projects, tasks, chatRooms, chatMessages, notifications, activityLogs, calendarEvents, currentUser, theme, isLoaded, isDbActive]);
 
   // Apply light class to document element
   const setTheme = (newTheme: 'dark' | 'light') => {
@@ -146,7 +222,22 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       targetType,
       createdAt: new Date().toISOString()
     };
-    setActivityLogs(prev => [newLog, ...prev].slice(0, 100)); // cap at 100
+    setActivityLogs(prev => [newLog, ...prev].slice(0, 100));
+
+    if (isDbActive) {
+      fetch('/api/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          action,
+          targetType,
+          targetName,
+          projectId,
+          taskId: null
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   // Helper: Update Profile
@@ -160,8 +251,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // Projects CRUD
   const addProject = (projectData: Omit<Project, 'id' | 'progress' | 'members'> & { memberIds: string[] }) => {
     const newProjectMembers = users.filter(u => projectData.memberIds.includes(u.id));
+    const newProjId = `p-${Date.now()}`;
     const newProject: Project = {
-      id: `p-${Date.now()}`,
+      id: newProjId,
       name: projectData.name,
       description: projectData.description,
       status: projectData.status,
@@ -187,12 +279,41 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setCalendarEvents(prev => [...prev, newEvent]);
 
     logActivity('created new project', newProject.name, 'project', newProject.id);
+
+    if (isDbActive) {
+      fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newProject,
+          workspaceId: 'w-default'
+        })
+      }).catch(err => console.error("Database sync failed", err));
+
+      fetch('/api/calendar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newEvent,
+          userId: currentUser.id
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
+
     return newProject;
   };
 
   const updateProject = (updatedProj: Project) => {
     setProjects(prev => prev.map(p => p.id === updatedProj.id ? updatedProj : p));
     logActivity('updated details of', updatedProj.name, 'project', updatedProj.id);
+
+    if (isDbActive) {
+      fetch('/api/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProj)
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const deleteProject = (id: string) => {
@@ -202,24 +323,30 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setTasks(prev => prev.filter(t => t.projectId !== id));
     setCalendarEvents(prev => prev.filter(e => e.projectId !== id));
     logActivity('deleted project', proj.name, 'project');
+
+    if (isDbActive) {
+      fetch(`/api/projects?id=${id}`, {
+        method: 'DELETE'
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   // Tasks CRUD
   const addTask = (taskData: Omit<Task, 'id' | 'comments'>) => {
+    const newTaskId = `t-${Date.now()}`;
     const newTask: Task = {
       ...taskData,
-      id: `t-${Date.now()}`,
+      id: newTaskId,
       comments: []
     };
 
     setTasks(prev => [newTask, ...prev]);
-
-    // Update Project Progress
     updateProjectProgress(taskData.projectId, [newTask, ...tasks]);
 
     // Add calendar event if task has due date
+    let newEvent: CalendarEvent | null = null;
     if (taskData.dueDate) {
-      const newEvent: CalendarEvent = {
+      newEvent = {
         id: `e-t-${newTask.id}`,
         title: `Task Due: ${newTask.title}`,
         start: taskData.dueDate,
@@ -229,10 +356,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         taskId: newTask.id,
         assignee: taskData.assignee
       };
-      setCalendarEvents(prev => [...prev, newEvent]);
+      setCalendarEvents(prev => [...prev, newEvent!]);
     }
 
-    // Trigger Notification for Assignee (if not current user)
+    // Trigger Notification for Assignee
     if (taskData.assignee && taskData.assignee.id !== currentUser.id) {
       const newNotification: AppNotification = {
         id: `n-${Date.now()}`,
@@ -245,16 +372,54 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         taskId: newTask.id
       };
       setNotifications(prev => [newNotification, ...prev]);
+
+      if (isDbActive) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            userId: taskData.assignee.id,
+            title: newNotification.title,
+            message: newNotification.message,
+            type: 'TASK_ASSIGNED',
+            projectId: taskData.projectId,
+            taskId: newTaskId
+          })
+        }).catch(err => console.error("Database sync failed", err));
+      }
     }
 
     logActivity('created task', newTask.title, 'task', taskData.projectId);
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newTask,
+          assigneeId: taskData.assignee?.id || null
+        })
+      }).catch(err => console.error("Database sync failed", err));
+
+      if (newEvent) {
+        fetch('/api/calendar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...newEvent,
+            userId: currentUser.id
+          })
+        }).catch(err => console.error("Database sync failed", err));
+      }
+    }
+
     return newTask;
   };
 
   const updateTask = (updatedTask: Task) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     
-    // Update calendar event
     setCalendarEvents(prev => prev.map(e => {
       if (e.taskId === updatedTask.id) {
         return {
@@ -270,6 +435,17 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     updateProjectProgress(updatedTask.projectId, tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
     logActivity('updated task details for', updatedTask.title, 'task', updatedTask.projectId);
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...updatedTask,
+          assigneeId: updatedTask.assignee?.id || null
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const deleteTask = (id: string) => {
@@ -279,6 +455,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setCalendarEvents(prev => prev.filter(e => e.taskId !== id));
     updateProjectProgress(task.projectId, tasks.filter(t => t.id !== id));
     logActivity('deleted task', task.title, 'task', task.projectId);
+
+    if (isDbActive) {
+      fetch(`/api/tasks?id=${id}`, {
+        method: 'DELETE'
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const moveTask = (taskId: string, newStatus: TaskStatus) => {
@@ -291,7 +473,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
     updateProjectProgress(task.projectId, tasks.map(t => t.id === taskId ? updatedTask : t));
 
-    // Log Activity
     const formattedOld = oldStatus.replace('_', ' ');
     const formattedNew = newStatus.replace('_', ' ');
     logActivity(
@@ -300,19 +481,42 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       'task',
       task.projectId
     );
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          status: newStatus
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   // Checklist / Subtasks
   const toggleSubtask = (taskId: string, subtaskId: string) => {
+    let finalSubtasks: any[] = [];
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
-        const updatedSubtasks = t.subtasks.map(s => 
+        finalSubtasks = t.subtasks.map(s => 
           s.id === subtaskId ? { ...s, completed: !s.completed } : s
         );
-        return { ...t, subtasks: updatedSubtasks };
+        return { ...t, subtasks: finalSubtasks };
       }
       return t;
     }));
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          subtasks: finalSubtasks
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const addSubtask = (taskId: string, title: string) => {
@@ -321,21 +525,47 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       title,
       completed: false
     };
+    let finalSubtasks: any[] = [];
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
-        return { ...t, subtasks: [...t.subtasks, newSub] };
+        finalSubtasks = [...t.subtasks, newSub];
+        return { ...t, subtasks: finalSubtasks };
       }
       return t;
     }));
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          subtasks: finalSubtasks
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const deleteSubtask = (taskId: string, subtaskId: string) => {
+    let finalSubtasks: any[] = [];
     setTasks(prev => prev.map(t => {
       if (t.id === taskId) {
-        return { ...t, subtasks: t.subtasks.filter(s => s.id !== subtaskId) };
+        finalSubtasks = t.subtasks.filter(s => s.id !== subtaskId);
+        return { ...t, subtasks: finalSubtasks };
       }
       return t;
     }));
+
+    if (isDbActive) {
+      fetch('/api/tasks', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: taskId,
+          subtasks: finalSubtasks
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   // Add Comment
@@ -357,7 +587,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
     logActivity(`commented on task`, task.title, 'comment', task.projectId);
 
-    // Trigger Notification for Assignee (if comments from other)
     if (task.assignee && task.assignee.id !== currentUser.id) {
       const newNotification: AppNotification = {
         id: `n-${Date.now()}`,
@@ -370,6 +599,34 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         taskId: task.id
       };
       setNotifications(prev => [newNotification, ...prev]);
+
+      if (isDbActive) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            userId: task.assignee.id,
+            title: newNotification.title,
+            message: newNotification.message,
+            type: 'COMMENT',
+            projectId: task.projectId,
+            taskId: task.id
+          })
+        }).catch(err => console.error("Database sync failed", err));
+      }
+    }
+
+    if (isDbActive) {
+      fetch('/api/tasks/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId,
+          userId: currentUser.id,
+          content
+        })
+      }).catch(err => console.error("Database sync failed", err));
     }
   };
 
@@ -391,19 +648,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
     setChatMessages(prev => [...prev, newMessage]);
 
-    // MOCK RESPONSE TIMER (to make chat feel alive!)
     if (content.startsWith('/') || content.includes('?') || Math.random() > 0.4) {
       const activeRoom = chatRooms.find(r => r.id === roomId);
       if (!activeRoom) return;
 
-      // Find a sender who is not "You"
       const candidates = activeRoom.members.filter(u => u.id !== currentUser.id);
       if (candidates.length === 0) return;
 
       const randomSender = candidates[Math.floor(Math.random() * candidates.length)];
       
       setTimeout(() => {
-        // Simple context replies
         let reply = "I'm on it! Let me double check and get back to you.";
         if (content.toLowerCase().includes('status')) {
           reply = "The current board looks solid, mostly waiting for testing reviews.";
@@ -424,7 +678,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         };
         setChatMessages(prev => [...prev, replyMessage]);
 
-        // Add a notification for unread messages if rooms aren't focused
         const newNotify: AppNotification = {
           id: `n-m-${Date.now()}`,
           title: `New Chat in #${activeRoom.name}`,
@@ -434,7 +687,21 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date().toISOString()
         };
         setNotifications(prev => [newNotify, ...prev]);
-      }, 2000 + Math.random() * 2000); // 2-4 seconds delays
+
+        if (isDbActive) {
+          fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'create',
+              userId: currentUser.id,
+              title: newNotify.title,
+              message: newNotify.message,
+              type: 'MENTION'
+            })
+          }).catch(err => console.error("Database sync failed", err));
+        }
+      }, 2000 + Math.random() * 2000); 
     }
   };
 
@@ -489,13 +756,34 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   // Notifications
   const markAllNotificationsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    if (isDbActive) {
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mark_all_read',
+          userId: currentUser.id
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
   const clearNotifications = () => {
     setNotifications([]);
+
+    if (isDbActive) {
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'clear_all',
+          userId: currentUser.id
+        })
+      }).catch(err => console.error("Database sync failed", err));
+    }
   };
 
-  // Helper: Update Project Progress dynamically based on tasks status
   const updateProjectProgress = (projId: string, allTasks: Task[]) => {
     const projectTasks = allTasks.filter(t => t.projectId === projId);
     if (projectTasks.length === 0) return;
@@ -510,6 +798,132 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }
       return p;
     }));
+  };
+
+  const initializeOnboardedWorkspace = (data: {
+    workspaceName: string;
+    projectName: string;
+    projectDesc: string;
+    teammates: string[];
+    taskTitle: string;
+    taskPriority: string;
+    taskAssigneeIndex: number;
+  }) => {
+    const newUsers: User[] = [
+      { id: 'u-current', name: 'John Doe (You)', email: 'john.doe@projectflow.ai', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', role: 'ADMIN', status: 'online' }
+    ];
+
+    data.teammates.forEach((name, i) => {
+      newUsers.push({
+        id: `u-custom-${i + 1}`,
+        name,
+        email: `${name.toLowerCase().replace(/\s+/g, '.')}@projectflow.ai`,
+        avatar: `https://images.unsplash.com/photo-${1500648767791 + i}?w=150`,
+        role: 'DEVELOPER',
+        status: 'offline'
+      });
+    });
+
+    const newProject: Project = {
+      id: 'p-custom-1',
+      name: data.projectName,
+      description: data.projectDesc,
+      status: 'active',
+      priority: 'medium',
+      dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+      tags: ['First Project'],
+      members: newUsers,
+      progress: 0
+    };
+
+    const assignedUser = newUsers[data.taskAssigneeIndex] || newUsers[0];
+    const newStatus: TaskStatus = 'todo';
+    const newTask: Task = {
+      id: 't-custom-1',
+      projectId: 'p-custom-1',
+      title: data.taskTitle,
+      description: 'Automatically initialized task from onboarding wizard.',
+      status: newStatus,
+      priority: data.taskPriority as any,
+      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      assignee: assignedUser,
+      labels: ['Setup'],
+      subtasks: [],
+      timeSpent: 0,
+      estimatedTime: 120,
+      comments: []
+    };
+
+    const newEvents: CalendarEvent[] = [
+      {
+        id: 'e-p-custom',
+        title: `Project Deadline: ${newProject.name}`,
+        start: newProject.dueDate,
+        end: newProject.dueDate,
+        type: 'milestone',
+        projectId: newProject.id
+      },
+      {
+        id: 'e-t-custom',
+        title: `Task Due: ${newTask.title}`,
+        start: newTask.dueDate || '',
+        end: newTask.dueDate || '',
+        type: 'task',
+        projectId: newProject.id,
+        taskId: newTask.id,
+        assignee: assignedUser
+      }
+    ];
+
+    const newLogs: ActivityLog[] = [
+      {
+        id: `act-${Date.now()}`,
+        userId: 'u-current',
+        userName: 'John Doe (You)',
+        userAvatar: newUsers[0].avatar,
+        action: 'created organization',
+        targetName: data.workspaceName,
+        targetType: 'member',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: `act-${Date.now() + 1}`,
+        userId: 'u-current',
+        userName: 'John Doe (You)',
+        userAvatar: newUsers[0].avatar,
+        action: 'created new project',
+        targetName: newProject.name,
+        targetType: 'project',
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    setUsers(newUsers);
+    setProjects([newProject]);
+    setTasks([newTask]);
+    setChatRooms([
+      { id: 'r-custom-1', name: 'general', type: 'channel', members: newUsers, unreadCount: 0 }
+    ]);
+    setChatMessages([]);
+    setNotifications([]);
+    setActivityLogs(newLogs);
+    setCalendarEvents(newEvents);
+    setCurrentUser(newUsers[0]);
+
+    localStorage.setItem('pf_custom_users', JSON.stringify(newUsers));
+    localStorage.setItem('pf_custom_projects', JSON.stringify([newProject]));
+    localStorage.setItem('pf_custom_tasks', JSON.stringify([newTask]));
+    localStorage.setItem('pf_custom_rooms', JSON.stringify([{ id: 'r-custom-1', name: 'general', type: 'channel', members: newUsers, unreadCount: 0 }]));
+    localStorage.setItem('pf_custom_messages', JSON.stringify([]));
+    localStorage.setItem('pf_custom_notifications', JSON.stringify([]));
+    localStorage.setItem('pf_custom_activities', JSON.stringify(newLogs));
+    localStorage.setItem('pf_custom_events', JSON.stringify(newEvents));
+    localStorage.setItem('pf_custom_current_user', JSON.stringify(newUsers[0]));
+    
+    localStorage.setItem('pf_workspace_mode', 'custom');
+    localStorage.setItem('pf_onboarded', 'true');
+    setIsDbActive(false); 
   };
 
   return (
@@ -544,7 +958,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       createRoom,
       markAllNotificationsRead,
       clearNotifications,
-      logActivity
+      logActivity,
+      initializeOnboardedWorkspace
     }}>
       {children}
     </ProjectStoreContext.Provider>

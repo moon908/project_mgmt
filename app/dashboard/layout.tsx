@@ -6,14 +6,24 @@ import CommandPalette from '@/components/command-palette';
 import { useProjectFlowStore } from '@/store/projectStore';
 import { Bell, Search, Sparkles, Check, CheckSquare, Trash2, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { 
     notifications, markAllNotificationsRead, clearNotifications,
     sidebarOpen, chatRooms, theme, setTheme 
   } = useProjectFlowStore();
 
   const [showNotifications, setShowNotifications] = useState(false);
+
+  React.useEffect(() => {
+    const mode = localStorage.getItem('pf_workspace_mode') || 'demo';
+    const onboarded = localStorage.getItem('pf_onboarded') === 'true';
+    if (mode === 'custom' && !onboarded) {
+      router.push('/onboarding');
+    }
+  }, [router]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -27,9 +37,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Top Header */}
-        <header className="h-16 border-b border-border bg-card/60 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
+        <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between shrink-0 z-20 shadow-sm">
           <div className="flex items-center gap-4">
-            <h2 className="text-sm font-semibold tracking-tight capitalize">
+            <h2 className="text-sm font-semibold tracking-tight text-foreground/95">
               Workspace Overview
             </h2>
           </div>
@@ -141,8 +151,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Dynamic Page content */}
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-background p-6 relative">
+          {/* Ambient workspace glows */}
+          <div className="absolute top-10 left-10 w-[400px] h-[400px] rounded-full bg-brand-500/5 blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-[450px] h-[450px] rounded-full bg-teal-500/5 blur-[130px] pointer-events-none" />
+          <div className="absolute top-1/2 right-1/4 w-[300px] h-[300px] rounded-full bg-amber-500/4 blur-[100px] pointer-events-none" />
+          
+          <div className="relative z-10">
+            {children}
+          </div>
         </main>
       </div>
 

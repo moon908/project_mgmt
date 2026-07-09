@@ -62,24 +62,30 @@ export default function Sidebar() {
         </button>
 
         {/* Brand / Logo */}
-        <div className="h-16 px-6 border-b border-border flex items-center gap-2.5 overflow-hidden">
-          <div className="w-8 h-8 rounded-lg bg-linear-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-md shadow-brand-500/20 shrink-0">
-            <Sparkles className="w-4 h-4 text-white animate-pulse" />
+        <div className="h-16 px-6 border-b border-border flex items-center gap-2.5 overflow-hidden shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex flex-col gap-1 items-center justify-center">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+              <div className="flex gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0" />
+              </div>
+            </div>
           </div>
           {sidebarOpen && (
-            <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground via-foreground/90 to-brand-400">
-              ProjectFlow AI
+            <span className="font-bold text-lg tracking-tight text-foreground">
+              Project<span className="text-brand-500">Flow</span>
             </span>
           )}
         </div>
 
         {/* Workspace Dropdown */}
         {sidebarOpen ? (
-          <div className="p-4">
-            <div className="p-2.5 rounded-lg bg-secondary/40 border border-border/60 flex items-center justify-between hover:bg-secondary/70 transition-all cursor-pointer">
+          <div className="p-4 shrink-0">
+            <div className="p-2.5 rounded-lg bg-secondary/40 border border-border flex items-center justify-between hover:bg-secondary transition-all cursor-pointer">
               <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-6 h-6 rounded-md bg-purple-900/30 border border-purple-500/30 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold text-purple-400">PF</span>
+                <div className="w-6 h-6 rounded-md bg-brand-500/10 border border-brand-500/20 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-brand-500">PF</span>
                 </div>
                 <div className="flex flex-col text-left overflow-hidden">
                   <span className="text-xs font-semibold truncate leading-tight">My Workspace</span>
@@ -90,9 +96,9 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          <div className="py-4 flex justify-center">
-            <div className="w-8 h-8 rounded-lg bg-purple-900/30 border border-purple-500/30 flex items-center justify-center cursor-pointer hover:bg-purple-900/50">
-              <span className="text-xs font-bold text-purple-400">PF</span>
+          <div className="py-4 flex justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center cursor-pointer hover:bg-brand-500/20">
+              <span className="text-xs font-bold text-brand-500">PF</span>
             </div>
           </div>
         )}
@@ -130,8 +136,6 @@ export default function Sidebar() {
             );
           })}
 
-          <div className="h-px bg-border my-4" />
-
           {/* Quick Actions (Pomodoro) */}
           <button
             onClick={() => setShowPomodoro(!showPomodoro)}
@@ -148,6 +152,57 @@ export default function Sidebar() {
               </div>
             )}
           </button>
+
+          {/* Projects section (Asana style list with color bullets) */}
+          <div className="h-px bg-border my-4" />
+          {sidebarOpen ? (
+            <>
+              <div className="px-3 mb-2 flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span>Projects</span>
+              </div>
+              <div className="space-y-0.5 pb-4">
+                {projects.map((proj, idx) => {
+                  const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500'];
+                  const bulletColor = colors[idx % colors.length];
+                  const active = pathname === `/dashboard/projects/${proj.id}`;
+                  return (
+                    <Link
+                      key={proj.id}
+                      href={`/dashboard/projects/${proj.id}`}
+                      className={`flex items-center gap-3 py-1.5 px-3 rounded-lg text-xs font-medium transition-all group relative cursor-pointer ${active
+                        ? 'bg-secondary text-foreground border-l-2 border-brand-500'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                        }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${bulletColor}`} />
+                      <span className="truncate">{proj.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-2 pb-4">
+              {projects.map((proj, idx) => {
+                const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500'];
+                const bulletColor = colors[idx % colors.length];
+                const active = pathname === `/dashboard/projects/${proj.id}`;
+                return (
+                  <Link
+                    key={proj.id}
+                    href={`/dashboard/projects/${proj.id}`}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center hover:bg-secondary/60 relative group cursor-pointer ${active ? 'ring-2 ring-brand-500 ring-offset-2 ring-offset-background' : ''
+                      }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${bulletColor}`} />
+                    <div className="absolute left-10 bg-card border border-border py-1 px-2.5 rounded-md text-xs font-semibold shadow-xl opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all pointer-events-none z-50 whitespace-nowrap">
+                      {proj.name}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         {/* Footer Settings & Theme & Profile */}

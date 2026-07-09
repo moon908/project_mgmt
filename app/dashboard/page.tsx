@@ -51,7 +51,7 @@ export default function DashboardHome() {
     return {
       name: user.name.split(' ')[0],
       tasks: userTasks.length,
-      color: user.id === 'u-current' ? '#a855f7' : '#6366f1'
+      color: user.id === 'u-current' ? '#f06a6a' : '#06b6d4'
     };
   }).filter(w => w.tasks > 0);
 
@@ -182,12 +182,12 @@ export default function DashboardHome() {
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#f06a6a" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#f06a6a" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorGenerated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -197,8 +197,8 @@ export default function DashboardHome() {
                   contentStyle={{ backgroundColor: '#121215', border: '1px solid #222', borderRadius: '8px', fontSize: '12px' }}
                   labelStyle={{ color: '#aaa', fontWeight: 'bold' }}
                 />
-                <Area type="monotone" dataKey="completed" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorCompleted)" name="Completed Tasks" />
-                <Area type="monotone" dataKey="generated" stroke="#6366f1" strokeWidth={1.5} fillOpacity={1} fill="url(#colorGenerated)" strokeDasharray="4 4" name="New Tasks" />
+                <Area type="monotone" dataKey="completed" stroke="#f06a6a" strokeWidth={2} fillOpacity={1} fill="url(#colorCompleted)" name="Completed Tasks" />
+                <Area type="monotone" dataKey="generated" stroke="#06b6d4" strokeWidth={1.5} fillOpacity={1} fill="url(#colorGenerated)" strokeDasharray="4 4" name="New Tasks" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
